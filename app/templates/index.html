@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dự Đoán Khả Năng Mắc Bệnh Tim Mạch</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f4f7f6;
+            font-family: 'Arial', sans-serif;
+        }
+        .main-container {
+            max-width: 900px;
+            margin: 30px auto;
+            background-color: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+        .form-section {
+            background-color: #f9fbfc;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .btn-primary {
+            background-color: #2c6fbb;
+            border-color: #2c6fbb;
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            background-color: #1a4f8a;
+        }
+        .prediction-result {
+            background-color: #f1f5f9;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        .risk-low .card-header {
+            background-color: #d1fae5;
+            color: #047857;
+        }
+        .risk-high .card-header {
+            background-color: #fee2e2;
+            color: #b91c1c;
+        }
+        .file-upload-container {
+            background-color: #f0f9ff;
+            border: 2px dashed #3b82f6;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+        }
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-spinner"></div>
+    </div>
+    <div class="container main-container">
+        <h1 class="text-center mb-4" style="color: #2c6fbb;">Dự Đoán Khả Năng Mắc Bệnh Tim Mạch</h1>
+        
+        <div class="form-section">
+            <form id="predictionForm" method="POST">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="FullName" class="form-label">Họ và Tên</label>
+                            <input type="text" id="FullName" name="FullName" class="form-control" placeholder="Nhập họ và tên" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="Sex" class="form-label">Giới tính</label>
+                            <select id="Sex" name="Sex" class="form-select" required>
+                                <option value="1">Nam</option>
+                                <option value="0">Nữ</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="DiffWalking" class="form-label">Khó khăn khi đi lại</label>
+                            <select id="DiffWalking" name="DiffWalking" class="form-select" required>
+                                <option value="1">Có</option>
+                                <option value="0">Không</option>
+                            </select>
+                        </div>                        
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="BMI" class="form-label">Chỉ số BMI</label>
+                            <input type="number" step="0.1" id="BMI" name="BMI" class="form-control" required placeholder="Nhập chỉ số BMI">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="Smoking" class="form-label">Hút thuốc</label>
+                            <select id="Smoking" name="Smoking" class="form-select" required>
+                                <option value="1">Có</option>
+                                <option value="0">Không</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="PhysicalActivity" class="form-label">Hoạt động thể chất</label>
+                            <select id="PhysicalActivity" name="PhysicalActivity" class="form-select" required>
+                                <option value="1">Thường xuyên</option>
+                                <option value="0">Ít hoặc không</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="PhysicalHealth" class="form-label">Số ngày sức khỏe không tốt</label>
+                            <select id="PhysicalHealth" name="PhysicalHealth" class="form-select" required>
+                                <option value="0">1 ngày</option>
+                                <option value="2">2 ngày</option>
+                                <option value="3">3 ngày</option>
+                                <option value="4">4 ngày</option>
+                                <option value="5">5 ngày</option>
+                                <option value="6">6 ngày</option>
+                                <option value="7">7 ngày</option>
+                                <option value="8">8 ngày</option>
+                                <option value="9">9 ngày</option>
+                                <option value="10">10 ngày</option>
+                                <option value="11">11 ngày</option>
+                                <option value="12">12 ngày</option>
+                                <option value="13">13 ngày</option>
+                                <option value="14">14 ngày</option>
+                                <option value="15">15 ngày</option>
+                                <option value="16">16 ngày</option>
+                                <option value="17">17 ngày</option>
+                                <option value="18">18 ngày</option>
+                                <option value="19">19 ngày</option>
+                                <option value="20">20 ngày</option>
+                                <option value="21">21 ngày</option>
+                                <option value="22">22 ngày</option>
+                                <option value="23">23 ngày</option>
+                                <option value="24">24 ngày</option>
+                                <option value="25">25 ngày</option>
+                                <option value="26">26 ngày</option>
+                                <option value="27">27 ngày</option>
+                                <option value="28">28 ngày</option>
+                                <option value="29">29 ngày</option>
+                                <option value="30">30 ngày</option>
+                                <option value="31">31 ngày</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="GenHealth" class="form-label">Sức khỏe chung</label>
+                            <select id="GenHealth" name="GenHealth" class="form-select" required>
+                                <option value="2">Rất tốt</option>
+                                <option value="0">Tốt</option>
+                                <option value="1">Khá</option>
+                                <option value="3">Trung bình</option>
+                                <option value="4">Kém</option> 
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="Diabetic" class="form-label">Tiểu đường</label>
+                            <select id="Diabetic" name="Diabetic" class="form-select" required>
+                                <option value="1">Có</option>
+                                <option value="0">Không</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="Stroke" class="form-label">Có tiền sử đột quỵ</label>
+                            <select id="Stroke" name="Stroke" class="form-select" required>
+                                <option value="1">Có</option>
+                                <option value="0">Không</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="text-center mt-3">
+                    <div class="btn-group" role="group">
+                        <button type="submit" class="btn btn-primary btn-lg">Dự Đoán Nguy Cơ</button>
+                        <button type="button" id="resetButton" class="btn btn-secondary btn-lg">Đặt Lại</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Kết quả dự đoán -->
+        <div id="predictionResultContainer" class="prediction-result" style="display: none;">
+            <div class="card">
+                <div class="card-header" id="predictionResultHeader">
+                    Kết Quả Dự Đoán
+                </div>
+                <div class="card-body">
+                    <div id="predictionResultContent"></div>
+                    <div id="predictionRiskLevel" class="mt-3 text-center"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Import file -->
+        <div class="form-section mt-4">
+            <h3 class="text-center mb-3" style="color: #2c6fbb;">Nhập Dữ Liệu Từ File</h3>
+            
+            <div class="file-upload-container mb-4">
+                <input type="file" id="fileInput" class="form-control" accept=".csv,.xlsx" hidden>
+                <label for="fileInput" class="btn btn-outline-primary w-100">
+                    <i class="bi bi-cloud-upload"></i> Chọn File CSV hoặc XLSX
+                </label>
+                <small id="fileNameDisplay" class="text-muted d-block mt-2">Chưa chọn file</small>
+                <small class="text-muted d-block mt-2">Hỗ trợ file CSV và Excel</small>
+            </div>
+
+            <!-- Thông tin hướng dẫn -->
+            <div class="alert alert-info">
+                <h5 class="mb-2 text-primary"><i class="bi bi-info-circle"></i> Lưu Ý Khi Tải Lên File</h5>
+                <p class="mb-1">Chỉ hỗ trợ file CSV hoặc Excel. Vui lòng lưu các thông tin theo tên cột tương ứng:</p>
+                <ul class="list-unstyled mb-0">
+                    <li><strong>Họ và tên</strong>: <code>Fullname</code></li>
+                    <li><strong>BMI</strong>: <code>BMI</code></li>
+                    <li><strong>Giới tính</strong>: <code>Sex</code> (<em>Male</em>, <em>Female</em>)</li>
+                    <li><strong>Khó khăn khi đi lại</strong>: <code>DiffWalking</code> (<em>Yes</em>, <em>No</em>)</li>
+                    <li><strong>Hút thuốc</strong>: <code>Smoking</code> (<em>Yes</em>, <em>No</em>)</li>
+                    <li><strong>Hoạt động thể chất</strong>: <code>PhysicalActivity</code> (<em>Yes</em>, <em>No</em>)</li>
+                    <li><strong>Số ngày sức khỏe không tốt</strong>: <code>PhysicalHealth</code> (<em>Excellent</em>, <em>Very Good</em>, <em>Good</em>, <em>Fair</em>, <em>Poor</em>)</li>
+                    <li><strong>Sức khỏe chung</strong>: <code>GenHealth</code> (<em>Yes</em>, <em>No</em>)</li>
+                    <li><strong>Tiểu đường</strong>: <code>Diabetic</code> (<em>Yes</em>, <em>No</em>)</li>
+                    <li><strong>Có tiền sử đột quỵ</strong>: <code>Stroke</code> (<em>Yes</em>, <em>No</em>)</li>
+                </ul>
+            </div>
+
+            <div class="text-center mb-4 d-flex justify-content-between">
+                <button id="predictButton" class="btn btn-primary flex-grow-1 me-2" disabled>
+                    <i class="bi bi-magic"></i> Dự Đoán
+                </button>
+                <button id="downloadButton" class="btn btn-success flex-grow-1" disabled>
+                    <i class="bi bi-download"></i> Tải File Dự Đoán
+                </button>
+            </div>
+
+            <div class="card mt-3" id="predictedFilePreviewContainer" style="display: none;">
+                <div class="card-header">
+                    Nội Dung File Dự Đoán
+                </div>
+                <div class="card-body file-preview" id="predictedFilePreview">
+                    <p class="text-muted text-center">Chưa có dữ liệu dự đoán</p>
+                </div>
+            </div>
+        </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+
+    <script>
+        document.getElementById('predictionForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            loadingOverlay.style.display = 'flex';
+            // Lấy dữ liệu từ form
+            const formData = new FormData(event.target);
+        
+            // Gửi request AJAX
+            fetch('/', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                const resultContainer = document.getElementById('predictionResultContainer');
+                const resultContent = document.getElementById('predictionResultContent');
+                const riskLevelElement = document.getElementById('predictionRiskLevel');
+        
+                // Hiển thị kết quả
+                if (data.result == 0.0) {
+                    // Nguy cơ thấp
+                    resultContainer.classList.remove('risk-high');
+                    resultContainer.classList.add('risk-low');
+                    resultContent.innerHTML = `
+                        <p><strong>Đánh Giá:</strong> Nguy cơ mắc bệnh tim thấp</p>
+                        <p>Bạn có sức khỏe tốt. Hãy duy trì lối sống lành mạnh.</p>
+                        
+                    `;
+                    riskLevelElement.innerHTML = '<span class="badge bg-success">Nguy Cơ Thấp</span>';
+                } 
+                else if (data.result == 1.0)
+                {
+                    // Nguy cơ cao
+                    resultContainer.classList.remove('risk-low');
+                    resultContainer.classList.add('risk-high');
+                    resultContent.innerHTML = `
+                        <p><strong>Đánh Giá:</strong> Nguy cơ mắc bệnh tim cao</p>
+                        <p>Bạn nên đến gặp bác sĩ để được kiểm tra và tư vấn chi tiết.</p>
+                        
+                    `;
+                    riskLevelElement.innerHTML = '<span class="badge bg-danger">Nguy Cơ Cao</span>';
+                }
+        
+                // Hiển thị kết quả               
+                resultContainer.style.display = 'block';
+                loadingOverlay.style.display = 'none';
+            })
+            .catch(error => {
+                console.error('Lỗi:', error);
+                alert('Đã có lỗi xảy ra trong quá trình dự đoán');
+            });
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const predictionForm = document.getElementById('predictionForm');
+            const resetButton = document.getElementById('resetButton');
+            const predictionResultContainer = document.getElementById('predictionResultContainer');
+
+            // Existing form submission script remains the same
+
+            // Reset button functionality
+            resetButton.addEventListener('click', function() {
+                // Reset form fields
+                predictionForm.reset();
+
+                // Hide prediction result
+                predictionResultContainer.style.display = 'none';
+            });
+        });
+
+        // Script xử lý file
+        document.addEventListener('DOMContentLoaded', function() {
+            const fileInput = document.getElementById('fileInput');
+            const fileNameDisplay = document.getElementById('fileNameDisplay');
+            const predictButton = document.getElementById('predictButton');
+            const downloadButton = document.getElementById('downloadButton');
+            const predictedFilePreviewContainer = document.getElementById('predictedFilePreviewContainer');
+            const predictedFilePreview = document.getElementById('predictedFilePreview');
+            const loadingOverlay = document.getElementById('loadingOverlay');
+        
+            let uploadedFile = null;
+            let predictedFileName = null;
+        
+            fileInput.addEventListener('change', function(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    uploadedFile = file;
+                    predictButton.disabled = false;
+                    downloadButton.disabled = true;
+                    predictedFilePreviewContainer.style.display = 'none';
+                    
+                    // Update file name display
+                    fileNameDisplay.textContent = file.name;
+                    fileNameDisplay.classList.remove('text-muted');
+                    fileNameDisplay.classList.add('text-success');
+                }
+            });
+
+
+        
+            predictButton.addEventListener('click', async function() {
+                if (!uploadedFile) {
+                    alert('Vui lòng chọn file trước khi dự đoán');
+                    return;
+                }
+
+                // Show loading overlay
+                loadingOverlay.style.display = 'flex';
+        
+                const formData = new FormData();
+                formData.append('file', uploadedFile);
+        
+                try {
+                    const response = await fetch('/predict_file', {
+                        method: 'POST',
+                        body: formData
+                    });
+        
+                    const result = await response.json();
+
+                    // Hide loading overlay
+                    loadingOverlay.style.display = 'none';
+        
+                    if (result.success) {
+                        // Hiển thị preview file dự đoán
+                        predictedFilePreviewContainer.style.display = 'block';
+                        
+                        // Lưu tên file dự đoán
+                        predictedFileName = result.filename;
+        
+                        // Hiển thị nội dung file dự đoán
+                        const predictedFileData = result.preview_data || [];
+                        displayPredictedFileContent(predictedFileData);
+        
+                        // Kích hoạt nút tải file
+                        downloadButton.disabled = false;
+        
+                        // Thông báo thành công
+                        alert('Dự đoán thành công');
+                    } else {
+                        // Hiển thị thông báo lỗi
+                        alert(result.message || 'Có lỗi xảy ra trong quá trình dự đoán');
+                    }
+                } catch (error) {
+                    // Hide loading overlay
+                    loadingOverlay.style.display = 'none';
+
+                    console.error('Lỗi dự đoán:', error);
+                    alert('Đã có lỗi xảy ra trong quá trình dự đoán');
+                }
+            });
+        
+            function displayPredictedFileContent(data) {
+                if (data.length === 0) {
+                    predictedFilePreview.innerHTML = '<p class="text-muted text-center">Không có dữ liệu để hiển thị</p>';
+                    return;
+                }
+        
+                // Tạo bảng HTML để hiển thị dữ liệu
+                let tableHTML = `
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    ${Object.keys(data[0]).map(key => `<th>${key}</th>`).join('')}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${data.map(row => `
+                                    <tr>
+                                        ${Object.values(row).map(cell => `<td>${cell}</td>`).join('')}
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+        
+                predictedFilePreview.innerHTML = tableHTML;
+            }
+        
+            downloadButton.addEventListener('click', async function() {
+                if (!predictedFileName) {
+                    alert('Chưa có file dự đoán để tải');
+                    return;
+                }
+        
+                try {
+                    // Chuyển hướng đến route download
+                    window.location.href = `/download_predicted_file/${predictedFileName}`;
+                } catch (error) {
+                    console.error('Lỗi tải file:', error);
+                    alert('Đã có lỗi xảy ra khi tải file');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
