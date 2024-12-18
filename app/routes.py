@@ -7,7 +7,7 @@ import io
 main = Blueprint('main', __name__)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__) )
-model_path = os.path.join(BASE_DIR, 'models', 'best_model')
+model_path = os.path.join(BASE_DIR, 'models', 'pipeline_model')
 model_predictor = ModelPredictor(model_path)
 
 @main.route('/', methods=['GET', 'POST'])
@@ -29,17 +29,17 @@ def predict():
             
             # Create DataFrame
             input_df = pd.DataFrame(input_data)
-
+            print(input_df.head())
             # Get prediction
             prediction = model_predictor.predict(input_df)
-
+            print(prediction.head())
             # Extract prediction result
             result = prediction['prediction'].values[0]
             if result == 0.0:
                 probability = prediction['probability'].values[0][0]
             else:
                 probability = prediction['probability'].values[0][1]
-
+            print('biến result: ',result)
             # Trả về JSON để JavaScript xử lý
             return jsonify({
                 'result': result,
@@ -106,7 +106,6 @@ def predict_file():
         
         # Thực hiện dự đoán
         convert_df = model_predictor.convert_columns(input_df)
-        print(convert_df.head(4))
         prediction = model_predictor.predict(convert_df)
         
         # Tạo DataFrame kết quả

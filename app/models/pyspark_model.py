@@ -4,6 +4,7 @@ findspark.init()
 from pyspark.ml.classification import GBTClassificationModel
 from pyspark.sql import SparkSession
 from pyspark.ml.feature import VectorAssembler
+from pyspark.ml import PipelineModel
 from pyspark.sql.functions import when, col
 from pyspark.sql.types import StructType, StructField, DoubleType, IntegerType
 import pandas as pd
@@ -20,7 +21,7 @@ class ModelPredictor:
             .getOrCreate()
 
         # Load pre-trained model
-        self.model = GBTClassificationModel.load(model_path)
+        self.model = PipelineModel.load(model_path)
     
     def convert_columns(self,data):
     # Assume data is a Pandas DataFrame
@@ -61,14 +62,16 @@ class ModelPredictor:
                 StructField("GenHealth", DoubleType(), True),
             ])
             spark_df = self.spark.createDataFrame(input_data, schema=schema)
-            
+            print('spark df')
+            print(spark_df.show())
             #Vector assemble data
-            features = ['BMI', 'Smoking', 'Stroke', 'PhysicalHealth', 'DiffWalking', 'Sex', 'Diabetic', 'PhysicalActivity', 'GenHealth']
-            assembler = VectorAssembler(inputCols=features, outputCol="features")
-            spark_df = assembler.transform(spark_df)
+            #features = ['BMI', 'Smoking', 'Stroke', 'PhysicalHealth', 'DiffWalking', 'Sex', 'Diabetic', 'PhysicalActivity', 'GenHealth']
+            #assembler = VectorAssembler(inputCols=features, outputCol="features")
+            #spark_df = assembler.transform(spark_df)
 
             # Make predictions
             predictions = self.model.transform(spark_df)
+            print(predictions)
             # Convert predictions to pandas for easier handling
             return predictions.toPandas()
         except Exception as e:
